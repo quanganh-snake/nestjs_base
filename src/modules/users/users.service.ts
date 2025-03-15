@@ -10,7 +10,7 @@ export class UsersService {
   ) { }
 
   getHello(): string {
-    const dbUser = this.configService.get<string>(enumConfigDatabase.dbUsername);
-    return `Hello World! - dbUser: ${dbUser}`;
+    const dbUser = this.configService.get('database');
+    return dbUser;
   }
 }

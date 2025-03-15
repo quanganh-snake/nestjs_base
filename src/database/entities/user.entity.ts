@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm"
+import { Role } from "src/database/entities/role.entity"
+import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm"
 
 @Entity('users')
 export class User {
@@ -35,6 +36,9 @@ export class User {
     type: 'boolean'
   })
   status: boolean
+
+  @ManyToMany(() => Role, role => role.id)
+  roles: Role[]
 
   @Column({
     type: 'timestamp',

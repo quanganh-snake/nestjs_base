@@ -7,6 +7,8 @@ import databaseConfig from 'src/config/database.config';
 import { validateEnvConfig } from 'src/validations/env.validation';
 import systemConfig from 'src/config/system.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { RolesModule } from './modules/roles/roles.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 
 @Module({
   imports: [
@@ -19,23 +21,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     }),
     TypeOrmModule.forRootAsync(
       {
-        // inject: [ConfigService],
-        // useFactory: async (configService: ConfigService) => configService.get('database')
-        useFactory: () => ({
-          type: 'mysql',
-          host: process.env.DATABASE_HOST,
-          port: parseInt(process.env.DATABASE_PORT) || 5432,
-          username: process.env.DATABASE_USER,
-          password: process.env.DATABASE_PASSWORD,
-          entities: ['dist/database/entities/*{.ts,.js}'],
-          migrations: ['dist/database/migrations/*{.ts,.js}'],
-          autoLoadEntities: true,
-          synchronize: false,
-        })
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: async (configService: ConfigService) => configService.get('database')
       }
     ),
     // Import the UsersModule
-    UsersModule
+    UsersModule,
+    RolesModule,
+    PermissionsModule
   ],
   controllers: [AppController],
   providers: [AppService],
