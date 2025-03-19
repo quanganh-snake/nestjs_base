@@ -29,11 +29,6 @@ export class User {
   phone_number: string
 
   @Column({
-    type: 'varchar'
-  })
-  role: string
-
-  @Column({
     type: 'boolean'
   })
   status: boolean
