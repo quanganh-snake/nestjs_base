@@ -1,4 +1,5 @@
 export const enumConfigDatabase = {
+  db: 'database',
   dbHost: 'database.host',
   dbPort: 'database.port',
   dbUsername: 'database.username',

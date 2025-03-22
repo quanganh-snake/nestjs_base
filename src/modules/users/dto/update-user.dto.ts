@@ -25,10 +25,10 @@ export class UpdateUserDto extends PickType(PartialType(CreateUserDto), ['phone_
   @IsOptional()
   @IsArray({ message: 'Roles phải là một mảng' })
   @IsNumber({}, { each: true, message: 'Mỗi phần tử của roles phải là số' })
-  roles: number[]
+  roles?: number[]
 
   @IsOptional()
   @IsArray({ message: 'Permissions phải là một mảng' })
   @IsNumber({}, { each: true, message: 'Mỗi phần tử của permissions phải là số' })
-  permissions: number[]
+  permissions?: number[]
 }

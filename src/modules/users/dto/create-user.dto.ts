@@ -1,12 +1,13 @@
 import { IsArray, IsDefined, IsEmail, IsNumber, IsOptional, IsPhoneNumber, IsString, Length, MaxLength } from "class-validator"
 
 export class CreateUserDto {
-  @IsDefined({ message: 'Trường username là bắt buộc' })
+  // @IsDefined({ message: 'Trường username là bắt buộc' })
+  @IsOptional()
   @IsString({ message: 'Username phải là một chuỗi' })
   @Length(5, 50, {
     message: 'Username phải có độ dài từ 5 đến 50 ký tự'
   })
-  username: string
+  username?: string
 
   @IsDefined({ message: 'Trường email là bắt buộc' })
   @IsEmail({}, { message: 'Email không hợp lệ' })

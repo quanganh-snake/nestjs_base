@@ -64,10 +64,13 @@ export class UsersService {
     if (emailExist) {
       throw new ConflictException('Email đã tồn tại');
     }
-    // 2. Kiểm tra username đã tồn tại chưa
-    const usernameExist = await this.checkUsernameExist(dataUser.username);
-    if (usernameExist) {
-      throw new ConflictException('Username đã tồn tại');
+
+    if (dataUser.username) {
+      // 2. Kiểm tra username đã tồn tại chưa
+      const usernameExist = await this.checkUsernameExist(dataUser.username);
+      if (usernameExist) {
+        throw new ConflictException('Username đã tồn tại');
+      }
     }
 
     // 3. Mở transaction
