@@ -13,6 +13,8 @@ import { CreateUserDto } from 'src/modules/users/dto/create-user.dto';
 import { TDataUserGoogle } from 'src/modules/auth/type/auth.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
+import { ResetPasswordDto } from 'src/modules/auth/dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +26,8 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly userService: UsersService,
     @InjectRedis() private readonly redis: Redis,
-    @InjectRepository(User) private readonly userRepository: Repository<User>
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly mailerService: MailerService,
   ) { }
 
   // 1. Create Token
@@ -161,13 +164,28 @@ export class AuthService {
 
     // TODO: 1. Tạo forgot code + lưu vào redis có EXP
     const forgotCode = Math.random().toString(36).substring(7);
-    await this.redis.set(`forgot_password_${email}`, forgotCode, 'EX', 3600);
+    // TTL Forgot Code: 180s
+    await this.redis.set(`forgot_password_${email}`, forgotCode, 'EX', 180);
     // TODO: 2. Gửi email chứa link Front-End reset password (có chứa token)
     // VD: https://domain.com/reset-password?email=${}&token=${token}
-    return `http://localhost:5500/reset-password?fogot-code=${forgotCode}&email=${email}`;
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Quên mật khẩu',
+      template: 'forgot-password',
+      context: {
+        linkResetPassword: `http://localhost:5500/reset-password?fogot-code=${forgotCode}&email=${email}`
+      }
+    })
+    return {
+      success: true,
+      message: 'Vui lòng kiểm tra email để reset mật khẩu!'
+    };
   }
 
-  async resetPassword(email: string, forgotCode: string, newPassword: string) {
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+
+    const { email, forgotCode, newPassword } = resetPasswordDto;
+
     const forgotCodeFromRedis = await this.redis.get(`forgot_password_${email}`);
 
     if (!forgotCodeFromRedis) throw new ForbiddenException('Mã xác thực đã hết hạn!');
@@ -185,6 +203,7 @@ export class AuthService {
     await this.userRepository.update(user.id, {
       password: passwordHash
     });
+    await this.redis.del(`forgot_password_${email}`);
     return user
   }
 

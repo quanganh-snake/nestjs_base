@@ -14,15 +14,34 @@ import { enumConfigDatabase } from 'src/constants/database.const';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { enumConfigRedis } from 'src/constants/redis.const';
 import redisConfig from 'src/config/redis.config';
+import { MailerModule } from '@nestjs-modules/mailer';
+import mailerConfig from 'src/config/mailer.config';
+import { enumConfigMailer } from 'src/constants/mailer.const';
+import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
 
 const APP_CONFIG = 'APP_CONFIG';
+type TAppConfig = {
+  database: any,
+  redis: {
+    host: string,
+    port: number,
+  },
+  mailer: {
+    host: string,
+    port: number,
+    user: string,
+    pass: string,
+    from: string,
+    secure: boolean,
+  }
+}
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env'],
-      load: [databaseConfig, systemConfig, redisConfig],
+      load: [databaseConfig, systemConfig, redisConfig, mailerConfig],
       validate: validateEnvConfig,
       expandVariables: true,
     }),
@@ -30,18 +49,40 @@ const APP_CONFIG = 'APP_CONFIG';
       {
         imports: [AppModule],
         inject: [APP_CONFIG], // Thay vì inject ConfigService
-        useFactory: (appConfig) => appConfig.database, // Lấy cấu hình từ APP_CONFIG
+        useFactory: (appConfig: TAppConfig) => appConfig.database, // Lấy cấu hình từ APP_CONFIG
       }
     ),
     RedisModule.forRootAsync({
       imports: [AppModule],
       inject: [APP_CONFIG],
-      useFactory: (appConfig) => {
+      useFactory: ({ redis }: TAppConfig) => {
         return ({
           type: 'single',
-          url: `redis://${appConfig.redis.host}:${appConfig.redis.port}`,
+          url: `redis://${redis.host}:${redis.port}`,
         })
       }, // Lấy cấu hình từ APP_CONFIG
+    }),
+    MailerModule.forRootAsync({
+      imports: [AppModule],
+      inject: [APP_CONFIG],
+      useFactory: ({ mailer }: TAppConfig) => {
+        const transportMailer = `${mailer.secure ? 'smtps' : 'smtp'}://${mailer.user}:${mailer.pass}@${mailer.host}`
+        return ({
+          transport: transportMailer,
+          defaults: {
+            from: '"TBQuangAnh NestJS Auth" <tbquanganh@gmail.com>'
+          },
+          template: {
+            dir: __dirname + '/templates/emails/',
+            adapter: new EjsAdapter({
+              inlineCssEnabled: true,
+            }),
+            options: {
+              strict: true,
+            },
+          },
+        })
+      }
     }),
     // modules
     UsersModule,
@@ -55,13 +96,21 @@ const APP_CONFIG = 'APP_CONFIG';
     {
       inject: [ConfigService],
       provide: APP_CONFIG, // Provider tập trung cho tất cả cấu hình
-      useFactory: (configService: ConfigService) => {
+      useFactory: (configService: ConfigService): TAppConfig => {
         return ({
           database: configService.get(enumConfigDatabase.db),
           redis: {
             host: configService.get(enumConfigRedis.host),
             port: configService.get(enumConfigRedis.port),
           },
+          mailer: {
+            host: configService.get(enumConfigMailer.host),
+            port: configService.get(enumConfigMailer.port),
+            user: configService.get(enumConfigMailer.user),
+            pass: configService.get(enumConfigMailer.pass),
+            from: configService.get(enumConfigMailer.from),
+            secure: configService.get(enumConfigMailer.secure),
+          }
         })
       },
 
